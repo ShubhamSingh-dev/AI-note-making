@@ -7,13 +7,27 @@ import { MessageRole } from "@prisma/client";
 
 type Message = Groq.Chat.ChatCompletionMessageParam;
 
-export const runAgent = async (userId: string, userMessage: string) => {
-  // 1. Get or create conversation
-  let conversation = await prisma.conversation.findFirst({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-    include: { messages: { orderBy: { createdAt: "asc" } } },
-  });
+export const runAgent = async (
+  userId: string,
+  userMessage: string,
+  conversationId?: string  // optional — pass to continue a specific conversation
+) => {
+  // 1. Get specific conversation if ID provided, otherwise get most recent, or create new
+  let conversation;
+
+  if (conversationId) {
+    conversation = await prisma.conversation.findFirst({
+      where: { id: conversationId, userId },
+      include: { messages: { orderBy: { createdAt: "asc" } } },
+    });
+    if (!conversation) throw new Error("Conversation not found or access denied");
+  } else {
+    conversation = await prisma.conversation.findFirst({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      include: { messages: { orderBy: { createdAt: "asc" } } },
+    });
+  }
 
   if (!conversation) {
     conversation = await prisma.conversation.create({
@@ -22,16 +36,9 @@ export const runAgent = async (userId: string, userMessage: string) => {
     });
   }
 
-  // 2. Save user message to DB
-  await prisma.message.create({
-    data: {
-      conversationId: conversation.id,
-      role: MessageRole.user,
-      content: userMessage,
-    },
-  });
-
-  // 3. Build message history — include tool messages from DB
+  // 2. Build message history from DB BEFORE saving the new user message.
+  //    This prevents the new user message from appearing twice in the context
+  //    (once from history, once appended explicitly below).
   const messages: Message[] = [
     {
       role: "system",
@@ -51,7 +58,7 @@ export const runAgent = async (userId: string, userMessage: string) => {
         };
       }
       if (msg.role === MessageRole.assistant) {
-        // assistant messages with tool_calls need special handling
+        // Assistant messages with tool_calls need special handling
         try {
           const parsed = JSON.parse(msg.content);
           if (parsed.tool_calls) {
@@ -66,10 +73,20 @@ export const runAgent = async (userId: string, userMessage: string) => {
       }
       return { role: "user" as const, content: msg.content };
     }),
-    { role: "user", content: userMessage },
+    // 3. Append the new user message ONCE at the end
+    { role: "user" as const, content: userMessage },
   ];
 
-  // 4. Agent loop
+  // 4. NOW save the user message to DB (after building the context above)
+  await prisma.message.create({
+    data: {
+      conversationId: conversation.id,
+      role: MessageRole.user,
+      content: userMessage,
+    },
+  });
+
+  // 5. Agent loop
   const MAX_TURNS = 10;
   let turn = 0;
 
@@ -89,7 +106,7 @@ export const runAgent = async (userId: string, userMessage: string) => {
 
     messages.push(assistantMessage);
 
-    // AI is done — return final response
+    // AI is done — save final response and return
     if (finishReason === "stop") {
       const finalResponse = assistantMessage.content ?? "Done.";
 
@@ -124,7 +141,7 @@ export const runAgent = async (userId: string, userMessage: string) => {
 
         const toolResultStr = JSON.stringify(toolResult);
 
-        // ✅ Save tool result to DB with toolCallId for history restoration
+        // Save tool result to DB with toolCallId for history restoration
         await prisma.message.create({
           data: {
             conversationId: conversation.id,

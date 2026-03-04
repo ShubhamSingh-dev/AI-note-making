@@ -9,6 +9,9 @@ import {
   generateRefreshToken,
 } from "../../utils/auth/jwt.js";
 import { setAuthCookies } from "../../utils/auth/helper.js";
+import { IJwtUserPayload } from "../../types/index.js";
+import jwt from "jsonwebtoken";
+import { env } from "../../config/env.js";
 
 // Handles user registration with password encryption and token generation
 export const registerUser = asyncHandler(
@@ -88,10 +91,53 @@ export const logoutUser = asyncHandler(async (req: Request, res: Response) => {
   res.status(200).json(new ApiResponse(200, null, "Logout successful"));
 });
 
-export const getCurrentUser = asyncHandler(async (req: Request, res: Response) => {
-  const userId = req.user?.id;
-  if (!userId) throw new ApiError(401, "Unauthorized");
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, username: true, email: true, createdAt: true } });
-  if (!user) throw new ApiError(404, "User not found");
-  res.status(200).json(new ApiResponse(200, user, "User fetched successfully"));
-});
+export const getCurrentUser = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) throw new ApiError(401, "Unauthorized");
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, username: true, email: true, createdAt: true },
+    });
+    if (!user) throw new ApiError(404, "User not found");
+    res
+      .status(200)
+      .json(new ApiResponse(200, user, "User fetched successfully"));
+  }
+);
+
+// Issues a new access token using a valid refresh token from cookies
+export const refreshAccessToken = asyncHandler(
+  async (req: Request, res: Response) => {
+    const token = req.cookies?.refreshToken;
+    if (!token) throw new ApiError(401, "No refresh token provided");
+
+    let decoded: IJwtUserPayload;
+    try {
+      decoded = jwt.verify(token, env.JWT_REFRESH_TOKEN) as IJwtUserPayload;
+    } catch (error) {
+      throw new ApiError(401, "Invalid or expired refresh token");
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+    if (!user) throw new ApiError(404, "User not found");
+
+    const newAccessToken = generateAccessToken(user);
+    res.cookie("accessToken", newAccessToken, {
+      httpOnly: true,
+      sameSite: "none",
+      secure: true,
+      maxAge: 1000 * 60 * 15, // 15 minutes
+    });
+
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { accessToken: newAccessToken },
+          "Token refreshed successfully"
+        )
+      );
+  }
+);
