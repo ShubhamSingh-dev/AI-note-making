@@ -114,7 +114,7 @@ const HeroHeader = () => {
                   <span className="hidden sm:inline">Github</span>
                   {stars !== null && (
                     <span className="hidden sm:inline text-xs text-muted-foreground font-normal">
-                      ⭐ {stars.toLocaleString()}
+                      ⭐ {displayStars.toLocaleString()}
                     </span>
                   )}
                 </Link>

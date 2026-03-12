@@ -7,6 +7,7 @@ import { useNotesStore } from '@/store/notesStore';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
 import { Zap, Send, RotateCcw } from 'lucide-react';
+import { getAIReply, parseMarkdown } from '@/lib/ai';
 
 interface Message {
   id: string;
@@ -23,60 +24,8 @@ const QUICK_PROMPTS = [
   { emoji: '✨', label: 'Summarize note', prompt: 'Summarize my latest note' },
 ];
 
-function getAIReply(msg: string, notes: ReturnType<typeof useNotesStore.getState>['notes'], username?: string): string {
-  const m = msg.toLowerCase();
-
-  if (m.includes('list') || m.includes('show') || m.includes('all my notes')) {
-    if (!notes.length) return "You don't have any notes yet! Create one from the Notes view.";
-    return `You have **${notes.length} notes** in total:\n\n${notes
-      .map((n, i) => `${i + 1}. **${n.title}**${n.isCompleted ? ' ✓' : ''}\n   ${n.content.slice(0, 55)}…`)
-      .join('\n\n')}`;
-  }
-
-  if (m.includes('creat') || m.includes('add') || m.includes('new note') || m.includes('titled')) {
-    const t = msg.match(/titled?\s+["']?([^"'\n,]+)/i)?.[1] || 'New Note from AI';
-    const c = msg.match(/with\s+(.+)/i)?.[1] || 'Created via AI assistant.';
-    useNotesStore.getState().addNote(t.trim(), c.trim());
-    return `✓ Done! I created a note titled **"${t.trim()}"**.\n\nHead to the Notes view to see it at the top.`;
-  }
-
-  if (m.includes('search') || m.includes('find') || m.includes('look for')) {
-    const kw = msg.match(/(?:for|about)\s+["']?([^"'\n]+)/i)?.[1]?.trim() || '';
-    const found = notes.filter(
-      (n) =>
-        n.title.toLowerCase().includes(kw.toLowerCase()) ||
-        n.content.toLowerCase().includes(kw.toLowerCase())
-    );
-    if (!found.length) return `No notes matched **"${kw}"**. Try a different keyword.`;
-    return `Found **${found.length} note${found.length > 1 ? 's' : ''}** matching "${kw}":\n\n${found
-      .map((n) => `• **${n.title}**\n  ${n.content.slice(0, 70)}…`)
-      .join('\n\n')}`;
-  }
-
-  if (m.includes('summar') || m.includes('brief')) {
-    const n = notes[0];
-    if (!n) return 'No notes to summarize yet.';
-    return `Summary of **"${n.title}"**:\n\n${n.content.slice(0, 150)}${n.content.length > 150 ? '…' : ''}\n\nThe note has ${n.content.split('\n').filter(Boolean).length} lines.`;
-  }
-
-  if (m.includes('delet') || m.includes('remov'))
-    return 'To delete a note, open it from the **Notes** view and click the trash icon, or hover the card to reveal action buttons.';
-
-  if (m.includes('complet') || m.includes('done') || m.includes('finish'))
-    return "To mark a note as completed, open it, click **Edit**, then toggle the 'Mark as completed' checkbox and save.";
-
-  if (m.includes('hello') || m.includes('hi ') || m.includes('hey'))
-    return `Hey there, ${username || 'friend'}! 👋\n\nI'm your Notiq AI assistant. I can help you:\n\n• **List** all your notes\n• **Create** new notes\n• **Search** through content\n• **Summarize** notes\n\nWhat would you like to do?`;
-
-  return 'I\'m your AI note assistant! Try asking me to:\n\n• "**Show all my notes**"\n• "**Create a note titled...**"\n• "**Search notes for...**"\n• "**Summarize my latest note**"';
-}
-
-function parseMarkdown(text: string) {
-  return text.replace(/\*\*(.+?)\*\*/g, '<strong class="text-zinc-100">$1</strong>');
-}
-
 export default function AIView() {
-  const notes = useNotesStore((s) => s.notes);
+  const { notes, addNote } = useNotesStore();
   const user = useAuthStore((s) => s.user);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -95,7 +44,7 @@ export default function AIView() {
     setIsTyping(true);
 
     setTimeout(() => {
-      const reply = getAIReply(text, notes, user?.username);
+      const reply = getAIReply(text, notes, addNote, user?.username);
       const aiMsg: Message = { id: uid(), role: 'ai', content: reply };
       setMessages((prev) => [...prev, aiMsg]);
       setIsTyping(false);

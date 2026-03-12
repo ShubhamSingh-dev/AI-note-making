@@ -31,7 +31,7 @@ const FEATURES = [
   'Natural language note creation',
 ];
 
-const fadeUp = {
+const fadeUp: any = {
   hidden: { opacity: 0, y: 24 },
   show: (i: number) => ({
     opacity: 1,

@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -16,7 +16,6 @@ import {
   Moon,
   FileIcon,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
 
 const NAV = [
   { id: 'notes', label: 'All Notes', icon: FileText, path: '/notes' },
