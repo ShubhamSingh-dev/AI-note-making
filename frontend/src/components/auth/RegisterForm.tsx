@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { passwordRules } from "@/constants/constants";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 // RegisterForm is a pure presentational form component.
@@ -28,39 +29,6 @@ interface RegisterFormProps {
   isLoading?: boolean;
   serverError?: string | null;
 }
-
-// ─── Password strength indicator ─────────────────────────────────────────────
-
-const passwordRules = [
-  { label: "At least 8 characters", test: (v: string) => v.length >= 8 },
-  { label: "One uppercase letter", test: (v: string) => /[A-Z]/.test(v) },
-  { label: "One number", test: (v: string) => /[0-9]/.test(v) },
-];
-
-function PasswordStrength({ value }: { value: string }) {
-  if (!value) return null;
-  return (
-    <ul className="mt-2 space-y-1">
-      {passwordRules.map(({ label, test }) => {
-        const passed = test(value);
-        return (
-          <li key={label} className="flex items-center gap-1.5 text-xs">
-            {passed ? (
-              <CheckCircle2 className="h-3.5 w-3.5 text-teal-400 shrink-0" />
-            ) : (
-              <XCircle className="h-3.5 w-3.5 text-zinc-600  shrink-0" />
-            )}
-            <span className={passed ? "text-teal-400" : "text-zinc-500"}>
-              {label}
-            </span>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function RegisterForm({
   onSubmit,
@@ -257,5 +225,29 @@ export default function RegisterForm({
         </Link>
       </p>
     </form>
+  );
+}
+
+// ─── Password strength indicator ─────────────────────────────────────────────
+function PasswordStrength({ value }: { value: string }) {
+  if (!value) return null;
+  return (
+    <ul className="mt-2 space-y-1">
+      {passwordRules.map(({ label, test }) => {
+        const passed = test(value);
+        return (
+          <li key={label} className="flex items-center gap-1.5 text-xs">
+            {passed ? (
+              <CheckCircle2 className="h-3.5 w-3.5 text-teal-400 shrink-0" />
+            ) : (
+              <XCircle className="h-3.5 w-3.5 text-zinc-600  shrink-0" />
+            )}
+            <span className={passed ? "text-teal-400" : "text-zinc-500"}>
+              {label}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

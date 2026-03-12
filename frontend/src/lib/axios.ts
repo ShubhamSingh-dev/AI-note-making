@@ -16,14 +16,19 @@ console.log("API BASE URL:", api.defaults.baseURL);
 api.interceptors.response.use(
   (response) => response,
 
-  (error) => {
+  async (error) => {
     const status = error.response?.status;
     const message = error.response?.data?.message ?? "Something went wrong";
 
     // 401 — token expired or invalid → clear auth state and redirect to login
     if (status === 401) {
-      useAuthStore.getState().clearAuth();
-      window.location.href = "/login";
+      try {
+        await axios.post("/users/refresh-token", {}, { withCredentials: true });
+        return api.request(error.config);
+      } catch (error) {
+        useAuthStore.getState().clearAuth();
+        window.location.href = "/login";
+      }
     }
 
     return Promise.reject({ status, message });

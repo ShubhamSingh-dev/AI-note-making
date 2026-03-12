@@ -1,58 +1,75 @@
-import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+
 import { useAuthStore } from "@/store/authStore";
+import type {
+  LoginFormData,
+  RegisterUserFormData,
+} from "@/schemas/auth.schema";
+import { loginApi, logoutApi, registerApi } from "@/api/auth/auth.api";
 
-export const useAuth = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const { setAuth, clearAuth } = useAuthStore();
+//login
+export const useLogin = () => {
   const navigate = useNavigate();
+  const { setAuth } = useAuthStore();
 
-  const login = async (email: string, password: string, createdAt: string) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      if (!email || !password) throw new Error("Fill in all fields");
-      // Mock login — no backend needed
-      await new Promise((res) => setTimeout(res, 800));
-      setAuth({ id: "1", username: email.split("@")[0], email, createdAt });
+  return useMutation({
+    mutationKey: ["login"],
+    mutationFn: (data: LoginFormData) => loginApi(data),
+    onSuccess: (response) => {
+      setAuth(response.data.user);
+      toast.success(`Welcome back, ${response.data.user.username}!`);
       navigate("/notes");
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Login failed");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    onError: (error: Error) => {
+      const message = error instanceof Error ? error.message : "Login failed";
 
-  const register = async (
-    username: string,
-    email: string,
-    password: string,
-    createdAt: string
-  ) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      if (!username || !email || !password)
-        throw new Error("Fill in all fields");
-      if (password.length < 8)
-        throw new Error("Password must be at least 8 characters");
-      // Mock register — no backend needed
-      await new Promise((res) => setTimeout(res, 800));
-      setAuth({ id: "1", username, email, createdAt });
+      toast.error(message);
+    },
+  });
+};
+
+//register
+export const useRegister = () => {
+  const navigate = useNavigate();
+  const { setAuth } = useAuthStore();
+
+  return useMutation({
+    mutationKey: ["register"],
+    mutationFn: (data: Omit<RegisterUserFormData, "confirmPassword">) =>
+      registerApi(data),
+
+    onSuccess: (response) => {
+      setAuth(response.data.user);
+      toast.success("Account created! Welcome to Notiq 🎉");
       navigate("/notes");
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Registration failed");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
 
-  const logout = () => {
-    clearAuth();
-    navigate("/login");
-  };
+    onError: (error: Error) => {
+      const message =
+        error instanceof Error ? error.message : "Registration failed";
 
-  return { login, register, logout, isLoading, error };
+      toast.error(message);
+    },
+  });
+};
+
+//logout
+export const useLogout = () => {
+  const navigate = useNavigate();
+  const { clearAuth } = useAuthStore();
+
+  return useMutation({
+    mutationKey: ["logout"],
+    mutationFn: logoutApi,
+    onSuccess: () => {
+      clearAuth();
+      navigate("/login");
+    },
+    onError: () => {
+      clearAuth();
+      navigate("/login");
+    },
+  });
 };

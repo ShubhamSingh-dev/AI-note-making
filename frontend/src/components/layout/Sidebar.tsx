@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useAuthStore } from "@/store/authStore";
 import { useNotesStore } from "@/store/notesStore";
-import { useAuth } from "@/hooks/useAuth";
+import { useLogout } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import {
   FileText,
@@ -38,15 +38,15 @@ export default function Sidebar({ view, isDark, onToggleTheme }: SidebarProps) {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const notes = useNotesStore((s) => s.notes);
-  const { logout } = useAuth();
+  const { mutate: logout, isPending: isLoggingOut } = useLogout();
 
   return (
     <aside
-      className="w-[228px] flex-shrink-0 h-screen flex flex-col border-r border-white/[.05]"
+      className="w-57 shrink-0 h-screen flex flex-col border-r border-white/5"
       style={{ background: "rgba(10,14,22,.92)", backdropFilter: "blur(16px)" }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-4 border-b border-white/[.05]">
+      <div className="flex items-center justify-between px-4 py-4 border-b border-white/5">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-teal-500 flex items-center justify-center shadow-md shadow-teal-500/30">
             <FileText className="w-4 h-4 text-white" />
@@ -62,7 +62,7 @@ export default function Sidebar({ view, isDark, onToggleTheme }: SidebarProps) {
                 variant="ghost"
                 size="icon"
                 onClick={onToggleTheme}
-                className="w-7 h-7 rounded-lg bg-white/[.05] text-zinc-500 hover:text-teal-400 hover:bg-white/[.08] transition-all"
+                className="w-7 h-7 rounded-lg bg-white/5 text-zinc-500 hover:text-teal-400 hover:bg-white/8 transition-all"
               >
                 {/* Show Sun icon when dark (clicking will go light), Moon when light (clicking will go dark) */}
                 {isDark ? (
@@ -96,10 +96,10 @@ export default function Sidebar({ view, isDark, onToggleTheme }: SidebarProps) {
                 "flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[13px] font-medium transition-all w-full text-left font-outfit",
                 active
                   ? "text-teal-400 bg-teal-500/10"
-                  : "text-zinc-500 hover:text-zinc-200 hover:bg-white/[.05]"
+                  : "text-zinc-500 hover:text-zinc-200 hover:bg-white/5"
               )}
             >
-              <Icon className="w-4 h-4 flex-shrink-0" />
+              <Icon className="w-4 h-4 shrink-0" />
               <span className="flex-1">{item.label}</span>
               {item.id === "notes" && (
                 <span className="text-[10px] font-semibold bg-white/[.07] text-zinc-400 px-1.5 py-0.5 rounded-md font-syne">
@@ -124,9 +124,9 @@ export default function Sidebar({ view, isDark, onToggleTheme }: SidebarProps) {
               <button
                 key={n.id}
                 onClick={() => navigate("/notes")}
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[12.5px] font-medium transition-all w-full text-left text-zinc-500 hover:text-zinc-200 hover:bg-white/[.05] font-outfit"
+                className="flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[12.5px] font-medium transition-all w-full text-left text-zinc-500 hover:text-zinc-200 hover:bg-white/5 font-outfit"
               >
-                <FileIcon className="w-3.5 h-3.5 flex-shrink-0 text-zinc-600" />
+                <FileIcon className="w-3.5 h-3.5 shrink-0 text-zinc-600" />
                 <span className="truncate">{n.title}</span>
               </button>
             ))}
@@ -140,9 +140,9 @@ export default function Sidebar({ view, isDark, onToggleTheme }: SidebarProps) {
       </nav>
 
       {/* User footer */}
-      <div className="p-3 border-t border-white/[.05]">
+      <div className="p-3 border-t border-white/5">
         <div className="flex items-center gap-2.5 px-1">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-indigo-500 flex items-center justify-center text-white text-xs font-syne font-bold flex-shrink-0 shadow-md">
+          <div className="w-8 h-8 rounded-full bg-linear-to-br from-teal-400 to-indigo-500 flex items-center justify-center text-white text-xs font-syne font-bold shrink-0 shadow-md">
             {user?.username?.[0]?.toUpperCase() ?? "U"}
           </div>
           <div className="flex-1 min-w-0">
@@ -159,8 +159,9 @@ export default function Sidebar({ view, isDark, onToggleTheme }: SidebarProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={logout}
-                  className="w-7 h-7 rounded-lg bg-white/[.04] text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all flex-shrink-0"
+                  onClick={() => logout()}
+                  disabled={isLoggingOut}
+                  className="w-7 h-7 rounded-lg bg-white/4 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all flex-shrink-0"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                 </Button>
