@@ -61,7 +61,7 @@ export default function AIView() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-8 py-5 border-b border-white/5 bg-white/1.5 shrink-0">
+      <div className="flex items-center justify-between px-8 py-5 border-b border-white/5 bg-white/[.01] shrink-0">
         <div>
           <h1 className="font-syne font-bold text-xl text-white flex items-center gap-2.5">
             AI Assistant
@@ -72,15 +72,17 @@ export default function AIView() {
           </h1>
           <p className="text-xs text-zinc-500 mt-0.5 font-outfit">Ask me anything about your notes</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setMessages([])}
-          className="border-white/8 bg-white/4 text-zinc-400 hover:text-zinc-200 font-syne gap-1.5"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-          New Chat
-        </Button>
+        {messages.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setMessages([])}
+            className="border-white/8 bg-white/4 text-zinc-400 hover:text-zinc-200 font-syne gap-1.5"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            New Chat
+          </Button>
+        )}
       </div>
 
       {/* Chat area */}
@@ -91,7 +93,7 @@ export default function AIView() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5 }}
-              className="w-14 h-14 rounded-2xl bg-linear-to-br from-teal-500 to-indigo-500 flex items-center justify-center mb-5 shadow-xl shadow-teal-500/20"
+              className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-500 to-indigo-500 flex items-center justify-center mb-5 shadow-xl shadow-teal-500/20"
             >
               <Zap className="w-7 h-7 text-white" />
             </motion.div>
@@ -121,7 +123,7 @@ export default function AIView() {
                 <button
                   key={q.label}
                   onClick={() => sendMessage(q.prompt)}
-                  className="p-3 rounded-xl border border-white/7 bg-white/3 hover:bg-white/6 text-left text-xs text-zinc-400 transition-all font-outfit"
+                  className="p-3 rounded-xl border border-white/7 bg-white/3 hover:bg-white/6 text-left text-xs text-zinc-400 hover:text-zinc-200 transition-all font-outfit"
                 >
                   {q.emoji} {q.label}
                 </button>
@@ -140,7 +142,7 @@ export default function AIView() {
                   className={cn('flex items-end gap-2.5', msg.role === 'user' ? 'justify-end' : 'justify-start')}
                 >
                   {msg.role === 'ai' && (
-                    <div className="w-7 h-7 rounded-full bg-linear-to-br from-teal-500 to-indigo-500 flex items-center justify-center flex-shrink-0 shadow-md shadow-teal-500/20">
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-500 to-indigo-500 flex items-center justify-center flex-shrink-0 shadow-md shadow-teal-500/20">
                       <Zap className="w-3.5 h-3.5 text-white" />
                     </div>
                   )}
@@ -155,7 +157,7 @@ export default function AIView() {
                     />
                   )}
                   {msg.role === 'user' && (
-                    <div className="w-7 h-7 rounded-full bg-linear-to-br from-teal-400 to-indigo-500 flex items-center justify-center flex-shrink-0 text-white text-[11px] font-syne font-bold shadow-md">
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-400 to-indigo-500 flex items-center justify-center flex-shrink-0 text-white text-[11px] font-syne font-bold shadow-md">
                       {(user?.username?.[0] ?? 'U').toUpperCase()}
                     </div>
                   )}
@@ -170,7 +172,7 @@ export default function AIView() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-end gap-2.5"
               >
-                <div className="w-7 h-7 rounded-full bg-linear-to-br from-teal-500 to-indigo-500 flex items-center justify-center shrink-0">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-500 to-indigo-500 flex items-center justify-center shrink-0">
                   <Zap className="w-3.5 h-3.5 text-white" />
                 </div>
                 <div className="bg-white/6 rounded-[18px_18px_18px_4px] px-4 py-3 flex gap-1.5 items-center">
@@ -210,7 +212,7 @@ export default function AIView() {
           <Button
             onClick={() => sendMessage(input)}
             disabled={isTyping || !input.trim()}
-            className="w-11 h-11 shrink-0 bg-teal-500 hover:bg-teal-400 rounded-2xl shadow-lg shadow-teal-500/25 p-0"
+            className="w-11 h-11 shrink-0 bg-teal-500 hover:bg-teal-400 rounded-2xl shadow-lg shadow-teal-500/25 p-0 disabled:opacity-40"
           >
             <Send className="w-4 h-4 text-zinc-900" />
           </Button>
