@@ -13,7 +13,7 @@ const viewVariants = {
   initial: { opacity: 0 },
   enter: {
     opacity: 1,
-    transition: { duration: 0.2, ease: [0.25, 0, 0.25, 1] as const },
+    transition: { duration: 0.2, ease: "easeOut" },
   },
   exit: { opacity: 0, transition: { duration: 0.15 } },
 } as const;
