@@ -1,8 +1,15 @@
-import { deleteConversationApi, getConversationByIdApi, getConversationsApi, newConversationApi, sendChatMessageApi } from "@/api/ai.api";
+import {
+  deleteConversationApi,
+  getConversationByIdApi,
+  getConversationsApi,
+  newConversationApi,
+  sendChatMessageApi,
+} from "@/api/ai.api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { noteKeys } from "./useNotes";
 
+const FIVE_MINUTES = 1000 * 60 * 5;
 
 export const aiKeys = {
   all: ["ai"] as const,
@@ -10,14 +17,14 @@ export const aiKeys = {
   conversation: (id: string) => [...aiKeys.all, "conversation", id] as const,
 };
 
-
 export const useGetConversations = () => {
-    return useQuery({
-        queryKey: aiKeys.conversations(),
-        queryFn: getConversationsApi,
-        select: (data) => data.data,
-    })
-}
+  return useQuery({
+    queryKey: aiKeys.conversations(),
+    queryFn: getConversationsApi,
+    select: (data) => data.data,
+    staleTime: FIVE_MINUTES,
+  });
+};
 
 export const useGetConversationById = (id: string) => {
   return useQuery({
@@ -25,12 +32,13 @@ export const useGetConversationById = (id: string) => {
     queryFn: () => getConversationByIdApi(id),
     select: (data) => data.data,
     enabled: !!id,
+    staleTime: FIVE_MINUTES,
   });
 };
 
 export const useSendMessage = () => {
   const queryClient = useQueryClient();
- 
+
   return useMutation({
     mutationKey: ["sendMessage"],
     mutationFn: ({
@@ -40,16 +48,16 @@ export const useSendMessage = () => {
       message: string;
       conversationId?: string;
     }) => sendChatMessageApi(message, conversationId),
-    onSuccess: (_, variables) => {
+    onSuccess: async (_, variables) => {
       // Invalidate the active conversation so messages stay in sync
       if (variables.conversationId) {
-        queryClient.invalidateQueries({
+        await queryClient.invalidateQueries({
           queryKey: aiKeys.conversation(variables.conversationId),
         });
       }
       // Refresh conversation list (updatedAt order changes)
-      queryClient.invalidateQueries({ queryKey: aiKeys.conversations() });
-      queryClient.invalidateQueries({queryKey:noteKeys.lists()});
+      await queryClient.invalidateQueries({ queryKey: aiKeys.conversations() });
+      await queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
     },
     onError: (error: Error) => {
       toast.error(error.message ?? "Failed to get a response");
@@ -59,12 +67,12 @@ export const useSendMessage = () => {
 
 export const useNewConversation = () => {
   const queryClient = useQueryClient();
- 
+
   return useMutation({
     mutationKey: ["newConversation"],
     mutationFn: newConversationApi,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: aiKeys.conversations() });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: aiKeys.conversations() });
     },
     onError: (error: Error) => {
       toast.error(error.message ?? "Failed to start new conversation");
@@ -74,11 +82,12 @@ export const useNewConversation = () => {
 
 export const useDeleteConversation = () => {
   const queryClient = useQueryClient();
- 
+
   return useMutation({
     mutationKey: ["deleteConversation"],
     mutationFn: (id: string) => deleteConversationApi(id),
-    onSuccess: () => {
+    onSuccess: async (_, id) => {
+      queryClient.removeQueries({ queryKey: aiKeys.conversation(id) });
       queryClient.invalidateQueries({ queryKey: aiKeys.conversations() });
       toast.success("Conversation deleted");
     },

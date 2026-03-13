@@ -153,7 +153,7 @@ export default function Sidebar({ view, isDark, onToggleTheme }: SidebarProps) {
                 <button
                   key={n.id}
                   onClick={() => {
-                    navigate("/notes");
+                    navigate(`/notes`);
                     setMobileMenuOpen(false);
                   }}
                   className="flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[12.5px] font-medium transition-all w-full text-left text-zinc-600 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-white/5 font-outfit"

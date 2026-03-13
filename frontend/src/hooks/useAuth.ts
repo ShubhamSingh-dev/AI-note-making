@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -7,7 +7,12 @@ import type {
   LoginFormData,
   RegisterUserFormData,
 } from "@/schemas/auth.schema";
-import { loginApi , registerApi, logoutApi } from "@/api/auth.api";
+import { loginApi, registerApi, logoutApi } from "@/api/auth.api";
+
+interface ApiError {
+  status: number;
+  message: string;
+}
 
 //login
 export const useLogin = () => {
@@ -22,10 +27,8 @@ export const useLogin = () => {
       toast.success(`Welcome back, ${response.data.user.username}!`);
       navigate("/notes");
     },
-    onError: (error: Error) => {
-      const message = error instanceof Error ? error.message : "Login failed";
-
-      toast.error(message);
+    onError: (error: ApiError) => {
+      toast.error(error.message ?? "Login failed");
     },
   });
 };
@@ -46,11 +49,8 @@ export const useRegister = () => {
       navigate("/notes");
     },
 
-    onError: (error: Error) => {
-      const message =
-        error instanceof Error ? error.message : "Registration failed";
-
-      toast.error(message);
+    onError: (error: ApiError) => {
+      toast.error(error.message ?? "Registration failed");
     },
   });
 };
@@ -59,15 +59,18 @@ export const useRegister = () => {
 export const useLogout = () => {
   const navigate = useNavigate();
   const { clearAuth } = useAuthStore();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationKey: ["logout"],
     mutationFn: logoutApi,
     onSuccess: () => {
+      queryClient.clear();
       clearAuth();
       navigate("/login");
     },
     onError: () => {
+      queryClient.clear();
       clearAuth();
       navigate("/login");
     },

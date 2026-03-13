@@ -13,6 +13,8 @@ import type {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+const FIVE_MINUTES = 1000 * 60 * 5;
+
 export const noteKeys = {
   all: ["notes"] as const,
   lists: () => [...noteKeys.all, "list"] as const,
@@ -27,6 +29,8 @@ export const useGetNotes = (page = 1, limit = 20) => {
     queryKey: noteKeys.list(page, limit),
     queryFn: () => getUserNotesApi(page, limit),
     select: (data) => data.data,
+    staleTime: FIVE_MINUTES,
+    placeholderData: (previousData: any) => previousData,
   });
 };
 
@@ -36,6 +40,7 @@ export const useGetNoteById = (id: string) => {
     queryFn: () => getNoteByIdApi(id),
     select: (data) => data.data,
     enabled: !!id,
+    staleTime: FIVE_MINUTES,
   });
 };
 
@@ -45,6 +50,7 @@ export const useSearchNotes = (query: string) => {
     queryFn: () => searchNotesApi(query),
     select: (data) => data.data,
     enabled: !!query.trim(),
+    staleTime: FIVE_MINUTES,
   });
 };
 
@@ -54,8 +60,8 @@ export const useCreateNote = () => {
   return useMutation({
     mutationKey: ["createNote"],
     mutationFn: (data: CreateNoteFormData) => createNoteApi(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
       toast.success("Note created successfully");
     },
     onError: (error: Error) => {
@@ -71,10 +77,10 @@ export const useUpdateNote = () => {
     mutationKey: ["updateNote"],
     mutationFn: ({ id, data }: { id: string; data: UpdateNoteFormData }) =>
       updateNoteApi(id, data),
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       const updateNote = response.data;
-      queryClient.setQueryData(noteKeys.detail(updateNote.id), response);
-      queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
+      queryClient.setQueryData(noteKeys.detail(updateNote.id), response.data);
+      await queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
       toast.success("Note updated successfully");
     },
     onError: (error: Error) => {
@@ -83,17 +89,16 @@ export const useUpdateNote = () => {
   });
 };
 
-
 export const useDeleteNote = () => {
   const queryClient = useQueryClient();
- 
+
   return useMutation({
     mutationKey: ["deleteNote"],
     mutationFn: (id: string) => deleteNoteApi(id),
-    onSuccess: (_, id) => {
+    onSuccess: async (_, id) => {
       // Remove the note from cache immediately
       queryClient.removeQueries({ queryKey: noteKeys.detail(id) });
-      queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
+      await queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
       toast.success("Note deleted");
     },
     onError: (error: Error) => {

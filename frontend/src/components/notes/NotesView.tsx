@@ -205,24 +205,22 @@ export default function NotesView() {
         {/* Notes grid */}
         {!isLoading && !isError && notes.length > 0 && (
           <>
-            <motion.div
-              layout
+            <div
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
             >
-              <AnimatePresence mode="popLayout">
+              <AnimatePresence mode="sync">
                 {notes.map((note, i) => {
                   const accent =
                     ACCENTS[((page - 1) * PER_PAGE + i) % ACCENTS.length];
                   return (
                     <motion.div
                       key={note.id}
-                      layout
                       initial={{ opacity: 0, y: 16 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{
-                        delay: i * 0.04,
-                        duration: 0.35,
+                        delay: i * 0.02,
+                        duration: 0.25,
                         ease: [0.16, 1, 0.3, 1],
                       }}
                       onClick={() => setDetailNote(note)}
@@ -277,7 +275,7 @@ export default function NotesView() {
                   );
                 })}
               </AnimatePresence>
-            </motion.div>
+            </div>
 
             {/* Pagination */}
             {totalPages > 1 && (
@@ -461,7 +459,7 @@ export default function NotesView() {
         open={!!detailNote}
         onOpenChange={(open) => !open && setDetailNote(null)}
       >
-        <DialogContent className="bg-white dark:bg-zinc-900/95 border-zinc-200 dark:border-white/8 text-zinc-900 dark:text-zinc-100 w-[calc(100vw-2rem)] sm:max-w-[520px] backdrop-blur-xl">
+        <DialogContent showCloseButton={false} className="bg-white dark:bg-zinc-900/95 border-zinc-200 dark:border-white/8 text-zinc-900 dark:text-zinc-100 w-[calc(100vw-2rem)] sm:max-w-[520px] backdrop-blur-xl">
           <DialogHeader>
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1">

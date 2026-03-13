@@ -204,7 +204,7 @@ export default function SearchView() {
                       key={note.id}
                       initial={{ opacity: 0, y: 14 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.05, duration: 0.35 }}
+                      transition={{ delay: Math.min(i * 0.05, 0.3), duration: 0.25 }}
                       onClick={() => setDetailNote(note)}
                       className="relative rounded-2xl p-4 border border-zinc-200 dark:border-white/6 bg-white dark:bg-white/3 hover:bg-zinc-50 dark:hover:bg-white/5 hover:-translate-y-0.5 transition-all duration-200 overflow-hidden cursor-pointer group shadow-sm dark:shadow-none"
                     >
