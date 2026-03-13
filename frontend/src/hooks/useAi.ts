@@ -1,6 +1,7 @@
 import { deleteConversationApi, getConversationByIdApi, getConversationsApi, newConversationApi, sendChatMessageApi } from "@/api/ai.api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { noteKeys } from "./useNotes";
 
 
 export const aiKeys = {
@@ -48,6 +49,7 @@ export const useSendMessage = () => {
       }
       // Refresh conversation list (updatedAt order changes)
       queryClient.invalidateQueries({ queryKey: aiKeys.conversations() });
+      queryClient.invalidateQueries({queryKey:noteKeys.lists()});
     },
     onError: (error: Error) => {
       toast.error(error.message ?? "Failed to get a response");

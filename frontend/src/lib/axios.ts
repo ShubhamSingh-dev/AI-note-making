@@ -23,7 +23,7 @@ api.interceptors.response.use(
     // 401 — token expired or invalid → clear auth state and redirect to login
     if (status === 401) {
       try {
-        await axios.post("/users/refresh-token", {}, { withCredentials: true });
+        await api.post("/users/refresh-token", {}, { withCredentials: true });
         return api.request(error.config);
       } catch (error) {
         useAuthStore.getState().clearAuth();

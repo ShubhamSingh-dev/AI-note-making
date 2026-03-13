@@ -61,6 +61,7 @@ export const updateNote = async (
 export const deleteNote = async (userId: string, noteId: string) => {
   await getNoteById(userId, noteId); // check ownership
   await prisma.note.delete({ where: { id: noteId } });
+  return { success: true , noteId}
 };
 
 export const summarizeNote = async (userId: string, noteId: string) => {

@@ -7,11 +7,11 @@ import { prisma } from "../../config/prisma.js";
 
 export const chat = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.id;
-  const { message } = req.body;
+  const { message , conversationId} = req.body;
 
   if (!message) throw new ApiError(400, "Message is required");
 
-  const response = await runAgent(userId, message);
+  const response = await runAgent(userId, message,conversationId);
 
   res
     .status(200)

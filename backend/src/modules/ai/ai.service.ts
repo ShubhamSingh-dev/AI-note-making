@@ -10,7 +10,7 @@ type Message = Groq.Chat.ChatCompletionMessageParam;
 export const runAgent = async (
   userId: string,
   userMessage: string,
-  conversationId?: string  // optional — pass to continue a specific conversation
+  conversationId?: string
 ) => {
   // 1. Get specific conversation if ID provided, otherwise get most recent, or create new
   let conversation;
@@ -37,8 +37,7 @@ export const runAgent = async (
   }
 
   // 2. Build message history from DB BEFORE saving the new user message.
-  //    This prevents the new user message from appearing twice in the context
-  //    (once from history, once appended explicitly below).
+  //    This prevents the new user message from appearing twice in the context.
   const messages: Message[] = [
     {
       role: "system",
@@ -58,7 +57,6 @@ export const runAgent = async (
         };
       }
       if (msg.role === MessageRole.assistant) {
-        // Assistant messages with tool_calls need special handling
         try {
           const parsed = JSON.parse(msg.content);
           if (parsed.tool_calls) {
@@ -93,12 +91,33 @@ export const runAgent = async (
   while (turn < MAX_TURNS) {
     turn++;
 
-    const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages,
-      tools,
-      tool_choice: "auto",
-    });
+    // FIX 2: Wrap Groq call to handle model generating malformed tool calls
+    let response;
+    try {
+      response = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages,
+        tools,
+        tool_choice: "auto",
+      });
+    } catch (err: unknown) {
+      const isMalformedToolCall =
+        err instanceof Error && err.message.includes("tool_use_failed");
+
+      const errorMsg = isMalformedToolCall
+        ? "Sorry, I had trouble calling that tool. Could you rephrase your request?"
+        : "An error occurred. Please try again.";
+
+      await prisma.message.create({
+        data: {
+          conversationId: conversation.id,
+          role: MessageRole.assistant,
+          content: errorMsg,
+        },
+      });
+
+      return errorMsg;
+    }
 
     const choice = response.choices[0];
     const assistantMessage = choice.message;
@@ -133,13 +152,29 @@ export const runAgent = async (
       });
 
       for (const toolCall of assistantMessage.tool_calls) {
-        const toolResult = await executeTool(
-          toolCall.function.name,
-          JSON.parse(toolCall.function.arguments) as Record<string, unknown>,
-          userId
-        );
+        let toolResultStr: string;
 
-        const toolResultStr = JSON.stringify(toolResult);
+        try {
+          const toolResult = await executeTool(
+            toolCall.function.name,
+            JSON.parse(toolCall.function.arguments) as Record<string, unknown>,
+            userId
+          );
+
+          // FIX 1: deleteNote returns void → JSON.stringify(undefined) = undefined
+          // Prisma rejects a missing content field, so always fallback to { success: true }
+          toolResultStr =
+            toolResult !== undefined && toolResult !== null
+              ? JSON.stringify(toolResult)
+              : JSON.stringify({ success: true });
+
+        } catch (err) {
+          // Surface tool execution errors back to the model instead of crashing
+          toolResultStr = JSON.stringify({
+            error:
+              err instanceof Error ? err.message : "Tool execution failed",
+          });
+        }
 
         // Save tool result to DB with toolCallId for history restoration
         await prisma.message.create({

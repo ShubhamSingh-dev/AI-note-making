@@ -14,3 +14,10 @@ export const ACCENTS = [
   "bg-linear-to-r from-green-500 to-emerald-500",
   "bg-linear-to-r from-blue-500 to-indigo-500",
 ];
+
+export const QUICK_PROMPTS = [
+  { emoji: '📋', label: 'List all notes', prompt: 'Show all my notes' },
+  { emoji: '✏️', label: 'Create a note', prompt: 'Create a note titled Shopping List with milk, eggs, bread' },
+  { emoji: '🔍', label: 'Search notes', prompt: 'Search my notes for meeting' },
+  { emoji: '✨', label: 'Summarize note', prompt: 'Summarize my latest note' },
+];
