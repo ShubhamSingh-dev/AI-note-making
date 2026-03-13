@@ -33,12 +33,7 @@ export default function DashboardPage({ view }: DashboardPageProps) {
 
   return (
     <div
-      className="flex w-full h-screen overflow-hidden"
-      style={{
-        background: isDark
-          ? "radial-gradient(ellipse 70% 60% at 5% 0%, rgba(20,184,166,.06) 0%, transparent 55%), radial-gradient(ellipse 50% 50% at 95% 100%, rgba(99,102,241,.05) 0%, transparent 55%), #07090f"
-          : "radial-gradient(ellipse 70% 60% at 5% 0%, rgba(20,184,166,.04) 0%, transparent 55%), radial-gradient(ellipse 50% 50% at 95% 100%, rgba(99,102,241,.03) 0%, transparent 55%), #f8fafc",
-      }}
+      className="flex w-full h-screen overflow-hidden bg-[radial-gradient(ellipse_70%_60%_at_5%_0%,rgba(20,184,166,.04)_0%,transparent_55%),radial-gradient(ellipse_50%_50%_at_95%_100%,rgba(99,102,241,.03)_0%,transparent_55%),#f8fafc] dark:bg-[radial-gradient(ellipse_70%_60%_at_5%_0%,rgba(20,184,166,.06)_0%,transparent_55%),radial-gradient(ellipse_50%_50%_at_95%_100%,rgba(99,102,241,.05)_0%,transparent_55%),#07090f]"
     >
       <Sidebar
         view={view}

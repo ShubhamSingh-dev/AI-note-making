@@ -1,74 +1,28 @@
-import type { Note } from '@/types/note';
-
-export function parseMarkdown(text: string) {
-  return text.replace(/\*\*(.+?)\*\*/g, '<strong class="text-zinc-100">$1</strong>');
-}
-
-export function getAIReply(
-  msg: string,
-  notes: Note[],
-  addNote: (title: string, content: string) => void,
-  username?: string
-): string {
-  const m = msg.toLowerCase();
-
-  if (m.includes('list') || m.includes('show all') || m.includes('all my notes')) {
-    if (!notes.length) return "You don't have any notes yet! Type something like \"Create a note about...\" to get started.";
-    return `You have **${notes.length} notes**:\n\n${notes
-      .map((n, i) => `${i + 1}. **${n.title}**${n.isCompleted ? ' ✓' : ''}\n   ${n.content.slice(0, 55)}…`)
-      .join('\n\n')}`;
-  }
-
-  if (m.includes('creat') || m.includes('add') || m.includes('new note') || m.includes('titled') || m.includes('note about') || m.includes('write')) {
-    const titleMatch =
-      msg.match(/titled?\s+["']?([^"'\n,]+)/i)?.[1] ||
-      msg.match(/note about\s+([^.!?\n]+)/i)?.[1] ||
-      msg.match(/write(?:\s+a(?:\s+note)?)?\s+(?:about\s+)?([^.!?\n]+)/i)?.[1] ||
-      'New Note';
-    const contentMatch =
-      msg.match(/with\s+(?:content[:\s]+)?(.+)/is)?.[1] ||
-      msg.match(/:\s*(.+)/s)?.[1] ||
-      msg;
-    const title = titleMatch.trim().slice(0, 60);
-    const content = contentMatch.trim().length > 5 ? contentMatch.trim() : `Note about ${title}`;
-    addNote(title, content);
-    return `✓ Done! Created note **"${title}"**.\n\nYou can see it at the top of your notes. Want me to create another?`;
-  }
-
-  if (m.includes('search') || m.includes('find') || m.includes('look for')) {
-    const kw = msg.match(/(?:for|about)\s+["']?([^"'\n]+)/i)?.[1]?.trim() || '';
-    if (!kw) return 'What would you like me to search for?';
-    const found = notes.filter(
-      (n) =>
-        n.title.toLowerCase().includes(kw.toLowerCase()) ||
-        n.content.toLowerCase().includes(kw.toLowerCase())
-    );
-    if (!found.length) return `No notes matched **"${kw}"**. Try a different keyword.`;
-    return `Found **${found.length} note${found.length > 1 ? 's' : ''}** matching "${kw}":\n\n${found
-      .map((n) => `• **${n.title}**\n  ${n.content.slice(0, 80)}…`)
-      .join('\n\n')}`;
-  }
-
-  if (m.includes('summar') || m.includes('brief')) {
-    const n = notes[0];
-    if (!n) return 'No notes to summarize yet.';
-    return `Summary of **"${n.title}"**:\n\n${n.content.slice(0, 200)}${n.content.length > 200 ? '…' : ''}\n\nThe note has ${n.content.split('\n').filter(Boolean).length} lines.`;
-  }
-
-  if (m.includes('hello') || m.includes('hi ') || m.includes('hey'))
-    return `Hey ${username || 'there'}! 👋\n\nI'm your AI. Just tell me what you want to capture and I'll create a note instantly. Try:\n\n• "**Create a note about...**"\n• "**Search for...**"\n• "**List all my notes**"`;
-
-  if (m.includes('help'))
-    return `Here's what I can do:\n\n• **Create notes** — "Add a note about my meetings today"\n• **Search notes** — "Find notes about TypeScript"\n• **List notes** — "Show all my notes"\n• **Summarize** — "Summarize my latest note"\n\nJust type naturally!`;
-
-  // Default: treat as note creation
-  if (msg.trim().length > 5) {
-    const lines = msg.split('\n');
-    const title = lines[0].slice(0, 60).replace(/^(create|add|write|note:?\s*)/i, '').trim() || 'Quick Note';
-    const content = msg.trim();
-    addNote(title, content);
-    return `✓ Captured as **"${title}"**!\n\nTip: You can be more specific, e.g. "Create a note titled [name] with [content]"`;
-  }
-
-  return 'I\'m here to help! Tell me what to note down, or ask me to list/search your existing notes.';
+/**
+ * Lightweight markdown-to-HTML converter for AI chat responses.
+ * Handles bold, italic, inline code, code blocks, and bullet lists.
+ */
+export function parseMarkdown(text: string): string {
+  return (
+    text
+      // Code blocks (must come before inline code)
+      .replace(
+        /```(\w+)?\n?([\s\S]*?)```/g,
+        '<pre class="bg-white/6 rounded-lg px-3 py-2 text-[12px] overflow-x-auto my-2 font-mono text-zinc-300"><code>$2</code></pre>'
+      )
+      // Inline code
+      .replace(
+        /`([^`]+)`/g,
+        '<code class="bg-white/8 rounded px-1 py-0.5 text-[12px] font-mono text-teal-300">$1</code>'
+      )
+      // Bold
+      .replace(/\*\*([^*]+)\*\*/g, '<strong class="text-zinc-100 font-semibold">$1</strong>')
+      // Italic
+      .replace(/\*([^*]+)\*/g, '<em class="text-zinc-300">$1</em>')
+      // Bullet lists
+      .replace(/^[-•]\s+(.+)$/gm, '<li class="ml-4 list-disc text-zinc-300">$1</li>')
+      .replace(/(<li[\s\S]*?<\/li>)/g, '<ul class="my-1.5 space-y-0.5">$1</ul>')
+      // Line breaks
+      .replace(/\n/g, '<br />')
+  );
 }

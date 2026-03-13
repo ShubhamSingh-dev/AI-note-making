@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
@@ -9,7 +10,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAuthStore } from "@/store/authStore";
-import { useNotesStore } from "@/store/notesStore";
+import { useGetNotes } from "@/hooks/useNotes";
 import { useLogout } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import {
@@ -37,14 +38,15 @@ interface SidebarProps {
 export default function Sidebar({ view, isDark, onToggleTheme }: SidebarProps) {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
-  const notes = useNotesStore((s) => s.notes);
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
 
+  // Fetch real notes — page 1, limit 5 is enough for the recent list
+  const { data, isLoading } = useGetNotes(1, 20);
+  const notes = data?.notes ?? [];
+  const total = data?.total ?? 0;
+
   return (
-    <aside
-      className="w-57 shrink-0 h-screen flex flex-col border-r border-white/5"
-      style={{ background: "rgba(10,14,22,.92)", backdropFilter: "blur(16px)" }}
-    >
+    <aside className="w-57 shrink-0 h-screen flex flex-col border-r border-white/5 bg-[rgba(10,14,22,.92)] backdrop-blur-lg">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 border-b border-white/5">
         <div className="flex items-center gap-2.5">
@@ -64,7 +66,6 @@ export default function Sidebar({ view, isDark, onToggleTheme }: SidebarProps) {
                 onClick={onToggleTheme}
                 className="w-7 h-7 rounded-lg bg-white/5 text-zinc-500 hover:text-teal-400 hover:bg-white/8 transition-all"
               >
-                {/* Show Sun icon when dark (clicking will go light), Moon when light (clicking will go dark) */}
                 {isDark ? (
                   <Sun className="w-3.5 h-3.5" />
                 ) : (
@@ -101,11 +102,15 @@ export default function Sidebar({ view, isDark, onToggleTheme }: SidebarProps) {
             >
               <Icon className="w-4 h-4 shrink-0" />
               <span className="flex-1">{item.label}</span>
+
+              {/* Notes count badge */}
               {item.id === "notes" && (
                 <span className="text-[10px] font-semibold bg-white/[.07] text-zinc-400 px-1.5 py-0.5 rounded-md font-syne">
-                  {notes.length}
+                  {isLoading ? "…" : total}
                 </span>
               )}
+
+              {/* AI badge */}
               {item.badge && item.id !== "notes" && (
                 <span className="text-[10px] font-semibold bg-teal-500/15 text-teal-400 px-1.5 py-0.5 rounded-md font-syne">
                   {item.badge}
@@ -115,26 +120,40 @@ export default function Sidebar({ view, isDark, onToggleTheme }: SidebarProps) {
           );
         })}
 
+        {/* Recent notes */}
         <p className="px-3 pt-5 pb-1.5 text-[10px] font-syne font-bold uppercase tracking-[.12em] text-zinc-600">
           Recent
         </p>
         <ScrollArea className="flex-1">
           <div className="space-y-0.5">
-            {notes.slice(0, 5).map((n) => (
-              <button
-                key={n.id}
-                onClick={() => navigate("/notes")}
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[12.5px] font-medium transition-all w-full text-left text-zinc-500 hover:text-zinc-200 hover:bg-white/5 font-outfit"
-              >
-                <FileIcon className="w-3.5 h-3.5 shrink-0 text-zinc-600" />
-                <span className="truncate">{n.title}</span>
-              </button>
-            ))}
-            {notes.length === 0 && (
+            {isLoading && (
+              <>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton
+                    key={i}
+                    className="h-8 rounded-[10px] bg-white/4 mx-1"
+                  />
+                ))}
+              </>
+            )}
+
+            {!isLoading && notes.length === 0 && (
               <p className="px-3 py-2 text-[11.5px] text-zinc-600 font-outfit italic">
                 No notes yet
               </p>
             )}
+
+            {!isLoading &&
+              notes.slice(0, 5).map((n: any) => (
+                <button
+                  key={n.id}
+                  onClick={() => navigate("/notes")}
+                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[12.5px] font-medium transition-all w-full text-left text-zinc-500 hover:text-zinc-200 hover:bg-white/5 font-outfit"
+                >
+                  <FileIcon className="w-3.5 h-3.5 shrink-0 text-zinc-600" />
+                  <span className="truncate">{n.title}</span>
+                </button>
+              ))}
           </div>
         </ScrollArea>
       </nav>
@@ -161,7 +180,7 @@ export default function Sidebar({ view, isDark, onToggleTheme }: SidebarProps) {
                   size="icon"
                   onClick={() => logout()}
                   disabled={isLoggingOut}
-                  className="w-7 h-7 rounded-lg bg-white/4 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all flex-shrink-0"
+                  className="w-7 h-7 rounded-lg bg-white/4 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all shrink-0"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                 </Button>

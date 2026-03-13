@@ -3,5 +3,7 @@ export interface Note {
   title: string;
   content: string;
   isCompleted: boolean;
+  userId: string;
   createdAt: string;
+  updatedAt: string;
 }

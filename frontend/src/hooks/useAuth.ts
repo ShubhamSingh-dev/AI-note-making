@@ -7,7 +7,7 @@ import type {
   LoginFormData,
   RegisterUserFormData,
 } from "@/schemas/auth.schema";
-import { loginApi, logoutApi, registerApi } from "@/api/auth/auth.api";
+import { loginApi , registerApi, logoutApi } from "@/api/auth.api";
 
 //login
 export const useLogin = () => {
