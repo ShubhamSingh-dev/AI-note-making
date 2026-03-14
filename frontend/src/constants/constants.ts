@@ -1,4 +1,5 @@
-export const backendUrl = import.meta.env.VITE_BACKEND_URL;
+export const backendUrl =
+  import.meta.env.VITE_BACKEND_URL ?? "http://localhost:4000";
 
 export const passwordRules = [
   { label: "At least 8 characters", test: (v: string) => v.length >= 8 },
@@ -16,8 +17,12 @@ export const ACCENTS = [
 ];
 
 export const QUICK_PROMPTS = [
-  { emoji: '📋', label: 'List all notes', prompt: 'Show all my notes' },
-  { emoji: '✏️', label: 'Create a note', prompt: 'Create a note titled Shopping List with milk, eggs, bread' },
-  { emoji: '🔍', label: 'Search notes', prompt: 'Search my notes for meeting' },
-  { emoji: '✨', label: 'Summarize note', prompt: 'Summarize my latest note' },
+  { emoji: "📋", label: "List all notes", prompt: "Show all my notes" },
+  {
+    emoji: "✏️",
+    label: "Create a note",
+    prompt: "Create a note titled Shopping List with milk, eggs, bread",
+  },
+  { emoji: "🔍", label: "Search notes", prompt: "Search my notes for meeting" },
+  { emoji: "✨", label: "Summarize note", prompt: "Summarize my latest note" },
 ];
