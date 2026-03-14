@@ -1,5 +1,4 @@
-export const backendUrl =
-  import.meta.env.VITE_BACKEND_URL ?? "http://localhost:4000";
+export const backendUrl = `${import.meta.env.VITE_BACKEND_URL} + /api/v1`;
 
 export const passwordRules = [
   { label: "At least 8 characters", test: (v: string) => v.length >= 8 },
