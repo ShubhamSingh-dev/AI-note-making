@@ -7,6 +7,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "npx prisma generate && tsc",
     "start": "node dist/index.js",
+    "postinstall": "npx prisma generate",
     "db:migrate": "npx prisma migrate deploy",
     "db:generate": "npx prisma generate"
   },
@@ -17,7 +18,9 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "devDependencies": {
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.4.2",
+    "@prisma/client": "^7.4.2",
     "@types/bcrypt": "^6.0.0",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
@@ -25,13 +28,6 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.3.2",
     "@types/pg": "^8.16.0",
-    "prisma": "^7.4.2",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
-  },
-  "dependencies": {
-    "@prisma/adapter-pg": "^7.4.2",
-    "@prisma/client": "^7.4.2",
     "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
@@ -41,6 +37,10 @@
     "groq-sdk": "^0.37.0",
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.19.0",
+    "prisma": "^7.4.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
     "zod": "^4.3.6"
-  }
+  },
+  "devDependencies": {}
 }
