@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: notiq-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health-check
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: JWT_ACCESS_TOKEN_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_TOKEN
+        generateValue: true
+      - key: ACCESS_TOKEN_EXPIRY
+        value: 7d
+      - key: REFRESH_TOKEN_EXPIRY
+        value: 30d
+      - key: GROQ_API_KEY
+        sync: false

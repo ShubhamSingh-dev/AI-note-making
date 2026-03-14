@@ -1,5 +1,4 @@
 import express, { NextFunction, Request, Response } from "express";
-import { prisma } from "./config/prisma.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
@@ -12,68 +11,90 @@ import { env } from "./config/env.js";
 
 export const app = express();
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// ─── Trust proxy (required on Railway/Render behind a load balancer) ──────────
+app.set("trust proxy", 1);
+
+// ─── Security headers ─────────────────────────────────────────────────────────
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("X-XSS-Protection", "1; mode=block");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  next();
+});
+
+// ─── Body parsers ─────────────────────────────────────────────────────────────
+app.use(express.json({ limit: "10kb" }));
+app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 app.use(cookieParser());
+
+// ─── CORS ─────────────────────────────────────────────────────────────────────
+const allowedOrigins = env.CORS_ORIGIN.split(",").map((o) => o.trim());
+
 app.use(
   cors({
-    origin: env.CORS_ORIGIN,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, Postman)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error(`CORS: origin ${origin} not allowed`));
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-// Rate limiter for auth routes — 10 attempts per 15 minutes
+// ─── Rate limiters ────────────────────────────────────────────────────────────
+
+// Auth routes — 10 attempts per 15 minutes
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 10,
-  message: {
-    success: false,
-    message: "Too many requests, please try again later.",
-  },
+  message: { success: false, message: "Too many requests, please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-// Rate limiter for AI chat — 20 requests per minute per IP
+// AI chat — 20 requests per minute per IP
 const aiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 20,
-  message: {
-    success: false,
-    message: "Too many AI requests, please slow down.",
-  },
+  message: { success: false, message: "Too many AI requests, please slow down." },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-// Health check endpoint for monitoring server availability
+// ─── Health check ─────────────────────────────────────────────────────────────
 app.get("/health-check", (req, res) => {
   return res.status(200).json({
     success: true,
     message: "Server is running",
+    environment: env.NODE_ENV,
   });
 });
 
-app.get("/test", async (req: Request, res: Response) => {
-  try {
-    const notes = await prisma.note.findMany();
-    return res.status(200).json({
-      success: true,
-      data: notes,
-    });
-  } catch (error: unknown) {
-    console.error(error);
-  }
-});
-
-// Mount API route handlers with global error handling middleware
+// ─── Routes ───────────────────────────────────────────────────────────────────
 app.use("/api/v1/users/login", authLimiter);
 app.use("/api/v1/users/register", authLimiter);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/notes", noteRouter);
 app.use("/api/v1/ai", aiLimiter, aiRouter);
 
+// ─── 404 handler ──────────────────────────────────────────────────────────────
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: "Route not found" });
+});
+
+// ─── Global error handler ─────────────────────────────────────────────────────
 app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
+  // CORS errors
+  if (err instanceof Error && err.message.startsWith("CORS:")) {
+    return res.status(403).json({ success: false, message: err.message });
+  }
+
   if (err instanceof ApiError) {
     return res.status(err.statusCode).json({
       success: false,
@@ -82,10 +103,13 @@ app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
     });
   }
 
+  // Don't leak stack traces in production
   console.error(err);
   return res.status(500).json({
     success: false,
-    message: "Internal server error",
-    errors: [],
+    message:
+      env.NODE_ENV === "production"
+        ? "Internal server error"
+        : (err instanceof Error ? err.message : "Internal server error"),
   });
 });

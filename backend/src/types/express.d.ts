@@ -1,12 +1,9 @@
-import { IAuthUser } from "./index.ts";
+import { IUser } from "./index.js";
 
-// types/express.d.ts
 declare global {
   namespace Express {
     interface Request {
-      user?: IAuthUser;
+      user?: IUser;
     }
   }
 }
-
-export {};
